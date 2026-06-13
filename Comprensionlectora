@@ -1,0 +1,437 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Literalidad e Inferencia</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { min-height: 100vh; background: #0f172a; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 20px; font-family: 'Segoe UI', sans-serif; position: relative; overflow: hidden; }
+  h1 { font-size: 38px; font-weight: 900; color: white; margin-bottom: 10px; text-align: center; }
+  h2 { font-size: 22px; font-weight: 700; color: white; margin-bottom: 20px; text-align: center; }
+  .screen { width: 100%; max-width: 720px; display: none; flex-direction: column; align-items: center; }
+  .screen.active { display: flex; }
+  .card { background: #1e293b; border-radius: 24px; padding: 32px; width: 100%; }
+  .texto-box { background: #0f172a; border: 2px solid #334155; border-radius: 14px; padding: 20px 24px; margin-bottom: 24px; font-size: 20px; color: #f1f5f9; line-height: 1.6; }
+  .pregunta { font-size: 22px; font-weight: 700; color: white; margin-bottom: 24px; text-align: center; }
+  .btn { border: none; border-radius: 14px; padding: 18px 24px; font-size: 18px; font-weight: 800; cursor: pointer; transition: transform 0.1s; }
+  .btn:active { transform: scale(0.97); }
+  .btn-literal { background: #3b82f6; color: white; flex: 1; }
+  .btn-inferencia { background: #f97316; color: white; flex: 1; }
+  .btn-next { background: #f1f5f9; color: #0f172a; width: 100%; margin-top: 12px; }
+  .btn-start { background: #f97316; color: white; font-size: 22px; padding: 18px 48px; border-radius: 16px; animation: pulse 2s infinite; }
+  .btn-reiniciar { background: #3b82f6; color: white; font-size: 20px; padding: 16px 40px; border-radius: 16px; }
+  .btn-equipo { width: 100%; background: #1e293b; border: 2px solid #475569; border-radius: 10px; padding: 8px; color: white; font-size: 13px; font-weight: 600; cursor: pointer; margin-bottom: 6px; }
+  .btn-equipo:hover { background: #334155; }
+  .flex-row { display: flex; gap: 16px; width: 100%; }
+  .badge { display: inline-block; color: white; border-radius: 8px; padding: 4px 14px; font-size: 13px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; margin-bottom: 20px; }
+  .feedback { border-radius: 14px; padding: 20px; margin-bottom: 16px; text-align: center; animation: pop 0.4s ease-out; }
+  .feedback.correcto { background: #14532d; border: 2px solid #16a34a; }
+  .feedback.incorrecto { background: #450a0a; border: 2px solid #dc2626; }
+  .feedback-emoji { font-size: 40px; margin-bottom: 8px; }
+  .feedback-titulo { font-size: 20px; font-weight: 700; }
+  .feedback.correcto .feedback-titulo { color: #86efac; }
+  .feedback.incorrecto .feedback-titulo { color: #fca5a5; }
+  .feedback-texto { font-size: 16px; color: #cbd5e1; margin-top: 8px; }
+  .tipo-badge-result { display: inline-block; color: white; border-radius: 8px; padding: 6px 16px; font-size: 14px; font-weight: 700; margin-bottom: 16px; }
+  .puntajes { display: flex; gap: 12px; margin-bottom: 20px; justify-content: center; width: 100%; }
+  .puntaje-box { background: #1e293b; border-radius: 14px; padding: 10px 20px; text-align: center; flex: 1; }
+  .puntaje-emoji { font-size: 22px; }
+  .puntaje-num { color: white; font-weight: 800; font-size: 28px; }
+  .puntaje-label { color: #94a3b8; font-size: 12px; }
+  .timer-wrap { text-align: center; margin-bottom: 16px; }
+  .timer { display: inline-block; background: #1e293b; border-radius: 50%; width: 64px; height: 64px; line-height: 64px; font-size: 28px; font-weight: 900; border: 3px solid #16a34a; }
+  .opcion { background: #0f172a; border: 2px solid #334155; border-radius: 12px; padding: 14px 20px; color: #f1f5f9; font-size: 18px; font-weight: 600; margin-bottom: 10px; }
+  .opcion.correcta { background: #14532d; border-color: #16a34a; color: #86efac; }
+  .opcion.incorrecta { background: #450a0a; border-color: #dc2626; color: #fca5a5; }
+  .reaccion { text-align: center; font-size: 32px; font-weight: 900; margin-bottom: 12px; animation: pop 0.3s ease-out; }
+  .reaccion.ok { color: #4ade80; }
+  .reaccion.mal { color: #f87171; }
+  .equipos-label { color: #f97316; font-weight: 700; text-align: center; margin-bottom: 12px; font-size: 16px; }
+  .fin-cards { display: flex; gap: 16px; justify-content: center; margin-bottom: 32px; flex-wrap: wrap; }
+  .fin-card { background: #1e293b; border-radius: 20px; padding: 20px 24px; border: 3px solid #334155; text-align: center; min-width: 120px; }
+  .fin-card.ganador { background: #f97316; border-color: #fb923c; }
+  .fin-card .fin-emoji { font-size: 36px; }
+  .fin-card .fin-corona { font-size: 24px; }
+  .fin-card .fin-pts { color: white; font-size: 36px; font-weight: 900; }
+  .fin-card .fin-label { color: #94a3b8; font-size: 13px; }
+  .fin-card.ganador .fin-label { color: #fed7aa; }
+  .intro-badges { display: flex; gap: 20px; justify-content: center; margin-bottom: 40px; flex-wrap: wrap; }
+  .intro-badge { border-radius: 16px; padding: 16px 24px; color: white; text-align: center; }
+  .intro-badge .ib-emoji { font-size: 28px; }
+  .intro-badge .ib-nombre { font-weight: 700; font-size: 18px; }
+  .intro-badge .ib-desc { font-size: 14px; opacity: 0.85; }
+  .progreso { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; width: 100%; }
+  .progreso span { color: #94a3b8; font-size: 14px; font-weight: 600; }
+  .progreso strong { color: #f97316; font-size: 16px; }
+  .emoji-box { background: #0f172a; border: 2px solid #334155; border-radius: 14px; padding: 24px; margin-bottom: 24px; text-align: center; }
+  .emoji-grande { font-size: 52px; margin-bottom: 8px; }
+  .emoji-desc { color: #94a3b8; font-size: 16px; font-style: italic; }
+  .confetti-piece { position: fixed; top: -20px; width: 10px; height: 10px; border-radius: 2px; animation: fall 2s ease-in forwards; pointer-events: none; z-index: 999; }
+  @keyframes fall { to { transform: translateY(110vh) rotate(720deg); opacity: 0; } }
+  @keyframes pulse { 0%,100%{transform:scale(1)} 50%{transform:scale(1.05)} }
+  @keyframes pop { 0%{transform:scale(0.5);opacity:0} 70%{transform:scale(1.1)} 100%{transform:scale(1);opacity:1} }
+  @keyframes shake { 0%,100%{transform:translateX(0)} 25%{transform:translateX(-8px)} 75%{transform:translateX(8px)} }
+</style>
+</head>
+<body>
+
+<!-- CONFETTI CONTAINER -->
+<div id="confetti-container"></div>
+
+<!-- PANTALLA INTRO -->
+<div class="screen active" id="pantalla-intro">
+  <div style="text-align:center; max-width:600px; position:relative;">
+    <div style="position:fixed; top:16px; right:20px; text-align:right; color:#94a3b8; font-size:13px; line-height:1.6;">
+      <div style="font-weight:700; color:#f1f5f9;">Colegio Rey Fahd</div>
+      <div>Prof. Perez Toledo Daniela</div>
+    </div>
+    <div style="font-size:72px; margin-bottom:16px;">🧠🔍📖</div>
+    <h1>¿Lo dice o hay que pensarlo?</h1>
+    <p style="font-size:20px; color:#94a3b8; margin-bottom:40px; margin-top:10px;">Aprendemos la diferencia entre leer con los ojos y leer con la cabeza.</p>
+    <div class="intro-badges">
+      <div class="intro-badge" style="background:#3b82f6;">
+        <div class="ib-emoji">📖</div>
+        <div class="ib-nombre">LITERAL</div>
+        <div class="ib-desc">Está escrito</div>
+      </div>
+      <div class="intro-badge" style="background:#f97316;">
+        <div class="ib-emoji">🔍</div>
+        <div class="ib-nombre">INFERENCIA</div>
+        <div class="ib-desc">Hay que pensarlo</div>
+      </div>
+    </div>
+    <button class="btn btn-start" onclick="irA('pantalla-fase1'); iniciarFase1()">¡Empezar! 🚀</button>
+  </div>
+</div>
+
+<!-- PANTALLA FASE 1 -->
+<div class="screen" id="pantalla-fase1">
+  <div class="progreso">
+    <span>FASE 1 — Practica el concepto</span>
+    <strong id="f1-progreso">1 / 8</strong>
+  </div>
+  <div class="card">
+    <div id="f1-badge" class="badge"></div>
+    <div id="f1-contenido"></div>
+    <p class="pregunta" id="f1-pregunta"></p>
+    <div class="flex-row" id="f1-botones">
+      <button class="btn btn-literal" onclick="responderF1(false)">📖 LITERAL<br><span style="font-size:13px;font-weight:400;opacity:0.85">Está en el texto</span></button>
+      <button class="btn btn-inferencia" onclick="responderF1(true)">🔍 INFERENCIA<br><span style="font-size:13px;font-weight:400;opacity:0.85">Hay que pensarlo</span></button>
+    </div>
+    <div id="f1-feedback" style="display:none;"></div>
+  </div>
+</div>
+
+<!-- PANTALLA TRANSICION -->
+<div class="screen" id="pantalla-transicion">
+  <div style="text-align:center; max-width:600px;">
+    <div style="font-size:80px; margin-bottom:16px;">🏆</div>
+    <h1>¡Muy bien, equipo!</h1>
+    <p style="font-size:20px; color:#94a3b8; margin:12px 0;">Ya saben la diferencia.</p>
+    <p style="font-size:18px; color:#f97316; font-weight:700; margin-bottom:40px;">Ahora... ¡A competir por equipos! 🔥</p>
+    <div class="card" style="margin-bottom:32px;">
+      <p style="color:#94a3b8; margin-bottom:16px; font-size:15px;">Hay 3 equipos. Cuando aparezca la pregunta, el equipo que responda primero (y bien) suma un punto.</p>
+      <div class="flex-row" style="justify-content:center;">
+        <div style="background:#0f172a;border-radius:12px;padding:10px 16px;color:white;font-weight:700;font-size:15px;">🔴 Equipo 1</div>
+        <div style="background:#0f172a;border-radius:12px;padding:10px 16px;color:white;font-weight:700;font-size:15px;">🟡 Equipo 2</div>
+        <div style="background:#0f172a;border-radius:12px;padding:10px 16px;color:white;font-weight:700;font-size:15px;">🔵 Equipo 3</div>
+      </div>
+    </div>
+    <button class="btn btn-start" onclick="iniciarFase2()">¡Que empiece el juego! 🎮</button>
+  </div>
+</div>
+
+<!-- PANTALLA FASE 2 -->
+<div class="screen" id="pantalla-fase2">
+  <div class="puntajes" id="f2-puntajes"></div>
+  <div class="timer-wrap">
+    <div class="timer" id="f2-timer">15</div>
+  </div>
+  <div class="card">
+    <div class="texto-box" id="f2-texto"></div>
+    <p class="pregunta" id="f2-pregunta"></p>
+    <div id="f2-opciones"></div>
+    <div id="f2-equipos-votacion" style="display:none;"></div>
+    <div id="f2-reaccion"></div>
+    <button class="btn btn-next" id="f2-btn-next" style="display:none;" onclick="siguienteF2()"></button>
+  </div>
+</div>
+
+<!-- PANTALLA FIN -->
+<div class="screen" id="pantalla-fin">
+  <div style="text-align:center; max-width:600px;">
+    <div style="font-size:80px; margin-bottom:16px;">🏆</div>
+    <h1 style="margin-bottom:24px;">¡Fin del juego!</h1>
+    <div class="fin-cards" id="fin-cards"></div>
+    <button class="btn btn-reiniciar" onclick="reiniciar()">Jugar de nuevo 🔄</button>
+  </div>
+</div>
+
+<script>
+// ---- DATOS ----
+const fase1 = [
+  { tipo:"texto", contenido:"Cuando la masa estaba lista, María la metió en el horno.", pregunta:"¿Dónde trabaja María?", esInferencia:true, explicacion:"No lo dice. Pero masa + horno = panadería. ¡Había que pensar! 🧠" },
+  { tipo:"imagen", emoji:"🌊☀️🏖️👙🕶️", descripcion:"Una familia con reposeras, sombrillas y castillos de arena.", pregunta:"¿Dónde están estas personas?", esInferencia:true, explicacion:"La imagen no dice 'playa', pero todo lo que vemos nos lleva ahí. ¡Inferencia! 🔍" },
+  { tipo:"texto", contenido:"Sara entró en la consulta, se puso su bata y atendió al primer paciente.", pregunta:"¿Cuál es la profesión de Sara?", esInferencia:true, explicacion:"El texto no dice 'médica' ni 'enfermera'. Lo inferimos por la bata y los pacientes. 🔍" },
+  { tipo:"imagen", emoji:"🍂🍁🌬️🧣", descripcion:"Hojas cayendo de los árboles, viento, una bufanda.", pregunta:"¿Qué estación del año es?", esInferencia:true, explicacion:"Ninguna imagen dice 'otoño', pero las hojas secas y la bufanda nos lo hacen entender. 🍂" },
+  { tipo:"texto", contenido:"Aunque hoy es domingo, debo estudiar porque dentro de tres días tengo un examen.", pregunta:"¿Hoy es domingo?", esInferencia:false, explicacion:"Sí, lo dice clarito: 'hoy es domingo'. ¡Literal! 📖" },
+  { tipo:"imagen", emoji:"🎒📚✏️🔔⏰", descripcion:"Una mochila, libros, un lápiz, un timbre y un reloj marcando las 8.", pregunta:"¿A dónde va este chico?", esInferencia:true, explicacion:"Ningún cartel dice 'escuela', pero todo junto nos hace pensar en eso. ¡Inferencia! 🎒" },
+  { tipo:"texto", contenido:"Compramos palomitas, entramos a la sala 10 y buscamos nuestro asiento en la fila 8.", pregunta:"¿Dónde estaban estas personas?", esInferencia:true, explicacion:"La palabra 'cine' no aparece. Pero palomitas + sala + fila nos hace inferirlo. 🔍" },
+  { tipo:"imagen", emoji:"🌧️☔🥾💧🌊", descripcion:"Lluvia intensa, botas de agua, charcos en la calle.", pregunta:"¿Hace buen tiempo?", esInferencia:true, explicacion:"No dice 'mal tiempo', pero la lluvia y los charcos nos lo hacen entender. 🧠" },
+];
+
+const fase2 = [
+  { texto:"Juan vino en noviembre y dijo que volvería en 4 meses.", pregunta:"¿En qué mes vuelve Juan?", opciones:["Enero","Marzo","Febrero"], correcta:1 },
+  { texto:"María tiene 3 años menos que Héctor. Héctor tiene 11 años.", pregunta:"¿Cuántos años tiene María?", opciones:["7 años","10 años","8 años"], correcta:2 },
+  { texto:"Llamé a Carla el 14 de marzo. Me dijo que llamaría una semana después.", pregunta:"¿Qué día llama Carla?", opciones:["21 de marzo","18 de marzo","30 de marzo"], correcta:0 },
+  { texto:"Son las nueve y cuarto. En media hora debo estar en el dentista.", pregunta:"¿A qué hora es la cita?", opciones:["9:45h","10:00h","10:15h"], correcta:0 },
+  { texto:"Mario es más alto que Juan pero no llegó a Nicolás.", pregunta:"¿Quién es el más alto?", opciones:["Mario","Juan","Nicolás"], correcta:2 },
+  { texto:"María quedó en segundo lugar en la media maratón.", pregunta:"¿Qué medalla ganó?", opciones:["Oro","Plata","Bronce"], correcta:1 },
+];
+
+// ---- ESTADO ----
+let f1idx = 0, f2idx = 0;
+let equipos = [0,0,0];
+let timerInterval = null;
+let tiempoRestante = 15;
+let f2respondido = false;
+
+const REACCIONES_OK = ["¡GENIAL! 🎉","¡EXACTO! 🔥","¡MUY BIEN! ⭐","¡LO TENÍAN! 💪","¡BRILLANTE! 🌟"];
+const REACCIONES_MAL = ["¡Casi! 😅","¡Uy, no! 🙈","¡La próxima! 😬","¡Se escapó! 🐟","¡Ay, ay, ay! 🤦"];
+
+// ---- SONIDOS ----
+function playSound(type) {
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    const g = ctx.createGain();
+    g.connect(ctx.destination);
+    if (type === "correct") {
+      [523,659,784,1047].forEach((f,i) => { const o=ctx.createOscillator(); o.connect(g); o.frequency.value=f; o.start(ctx.currentTime+i*0.12); o.stop(ctx.currentTime+i*0.12+0.12); });
+    } else if (type === "wrong") {
+      const o=ctx.createOscillator(); o.type="sawtooth"; o.connect(g);
+      o.frequency.setValueAtTime(300,ctx.currentTime); o.frequency.linearRampToValueAtTime(100,ctx.currentTime+0.4);
+      g.gain.setValueAtTime(0.3,ctx.currentTime); g.gain.linearRampToValueAtTime(0,ctx.currentTime+0.4);
+      o.start(); o.stop(ctx.currentTime+0.4);
+    } else if (type === "tick") {
+      const o=ctx.createOscillator(); o.frequency.value=800; o.connect(g);
+      g.gain.setValueAtTime(0.1,ctx.currentTime); g.gain.linearRampToValueAtTime(0,ctx.currentTime+0.05);
+      o.start(); o.stop(ctx.currentTime+0.05);
+    } else if (type === "tension") {
+      [220,233,247].forEach((f,i) => { const o=ctx.createOscillator(); o.type="square"; o.connect(g); o.frequency.value=f; g.gain.value=0.05; o.start(ctx.currentTime+i*0.18); o.stop(ctx.currentTime+i*0.18+0.18); });
+    } else if (type === "fanfare") {
+      [392,523,659,784,1047,1319].forEach((f,i) => { const o=ctx.createOscillator(); o.connect(g); o.frequency.value=f; o.start(ctx.currentTime+i*0.1); o.stop(ctx.currentTime+i*0.1+0.15); });
+    }
+  } catch(e) {}
+}
+
+// ---- CONFETTI ----
+function confetti() {
+  const container = document.getElementById('confetti-container');
+  const colors = ["#f97316","#3b82f6","#16a34a","#f59e0b","#ec4899"];
+  for (let i = 0; i < 30; i++) {
+    const el = document.createElement('div');
+    el.className = 'confetti-piece';
+    el.style.left = Math.random()*100 + '%';
+    el.style.background = colors[Math.floor(Math.random()*colors.length)];
+    el.style.width = (8+Math.random()*10)+'px';
+    el.style.height = (8+Math.random()*10)+'px';
+    el.style.animationDelay = Math.random()*0.5+'s';
+    container.appendChild(el);
+    setTimeout(() => el.remove(), 2500);
+  }
+}
+
+// ---- NAVEGACION ----
+function irA(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+// ---- FASE 1 ----
+function iniciarFase1() { f1idx = 0; renderF1(); }
+
+function renderF1() {
+  const q = fase1[f1idx];
+  document.getElementById('f1-progreso').textContent = (f1idx+1) + ' / ' + fase1.length;
+  const badge = document.getElementById('f1-badge');
+  badge.textContent = q.esInferencia ? '🔍 ¿Hay que pensar?' : '📖 ¿Está en el texto?';
+  badge.style.background = q.esInferencia ? '#f97316' : '#3b82f6';
+
+  const contenido = document.getElementById('f1-contenido');
+  if (q.tipo === 'texto') {
+    contenido.innerHTML = `<div class="texto-box">"${q.contenido}"</div>`;
+  } else {
+    contenido.innerHTML = `<div class="emoji-box"><div class="emoji-grande">${q.emoji}</div><div class="emoji-desc">${q.descripcion}</div></div>`;
+  }
+  document.getElementById('f1-pregunta').textContent = q.pregunta;
+  document.getElementById('f1-botones').style.display = 'flex';
+  document.getElementById('f1-feedback').style.display = 'none';
+}
+
+function responderF1(esInf) {
+  const q = fase1[f1idx];
+  const correcto = esInf === q.esInferencia;
+  document.getElementById('f1-botones').style.display = 'none';
+  if (correcto) { playSound('correct'); confetti(); }
+  else { playSound('wrong'); }
+
+  const tipoBg = q.esInferencia ? '#f97316' : '#3b82f6';
+  const tipoNombre = q.esInferencia ? '🔍 INFERENCIA' : '📖 LITERAL';
+  const fb = document.getElementById('f1-feedback');
+  fb.innerHTML = `
+    <div class="feedback ${correcto?'correcto':'incorrecto'}">
+      <div class="feedback-emoji">${correcto?'🎉':'😅'}</div>
+      <div class="feedback-titulo">${correcto?'¡Correcto!':'¡No era esa!'}</div>
+      <div class="feedback-texto">${q.explicacion}</div>
+    </div>
+    <div style="text-align:center;">
+      <span class="tipo-badge-result" style="background:${tipoBg}">${tipoNombre}</span>
+    </div>
+    <button class="btn btn-next" onclick="siguienteF1()">${f1idx+1 < fase1.length ? 'Siguiente →' : '¡A competir! 🏆'}</button>
+  `;
+  fb.style.display = 'block';
+}
+
+function siguienteF1() {
+  if (f1idx + 1 >= fase1.length) {
+    irA('pantalla-transicion');
+  } else {
+    f1idx++;
+    renderF1();
+  }
+}
+
+// ---- FASE 2 ----
+function iniciarFase2() {
+  equipos = [0,0,0]; f2idx = 0;
+  irA('pantalla-fase2');
+  renderF2();
+}
+
+function renderPuntajes() {
+  const emojis = ['🔴','🟡','🔵'];
+  document.getElementById('f2-puntajes').innerHTML = equipos.map((p,i) =>
+    `<div class="puntaje-box"><div class="puntaje-emoji">${emojis[i]}</div><div class="puntaje-num">${p}</div><div class="puntaje-label">Equipo ${i+1}</div></div>`
+  ).join('');
+}
+
+function renderF2() {
+  f2respondido = false;
+  const q = fase2[f2idx];
+  renderPuntajes();
+  document.getElementById('f2-texto').textContent = q.texto;
+  document.getElementById('f2-pregunta').textContent = q.pregunta;
+  document.getElementById('f2-reaccion').innerHTML = '';
+  document.getElementById('f2-btn-next').style.display = 'none';
+  document.getElementById('f2-equipos-votacion').style.display = 'none';
+
+  document.getElementById('f2-opciones').innerHTML = q.opciones.map((op,i) =>
+    `<div class="opcion" id="op-${i}">${op}</div>`
+  ).join('');
+
+  iniciarTimer();
+}
+
+function iniciarTimer() {
+  tiempoRestante = 15;
+  clearInterval(timerInterval);
+  actualizarTimer();
+  timerInterval = setInterval(() => {
+    tiempoRestante--;
+    actualizarTimer();
+    if (tiempoRestante <= 4 && tiempoRestante > 0) playSound('tension');
+    else if (tiempoRestante > 4) playSound('tick');
+    if (tiempoRestante <= 0) {
+      clearInterval(timerInterval);
+      mostrarVotacion();
+    }
+  }, 1000);
+}
+
+function actualizarTimer() {
+  const el = document.getElementById('f2-timer');
+  el.textContent = tiempoRestante;
+  const color = tiempoRestante <= 5 ? '#dc2626' : tiempoRestante <= 10 ? '#f97316' : '#16a34a';
+  el.style.color = color;
+  el.style.borderColor = color;
+}
+
+function mostrarVotacion() {
+  if (f2respondido) return;
+  const q = fase2[f2idx];
+  const div = document.getElementById('f2-equipos-votacion');
+  div.innerHTML = `<p class="equipos-label">¿Qué equipo responde?</p>
+    <div class="flex-row">
+      ${['🔴 E1','🟡 E2','🔵 E3'].map((label,eq) =>
+        `<div style="flex:1;">${q.opciones.map((op,i) =>
+          `<button class="btn-equipo" onclick="responderF2(${eq},${i})">${label}: ${op}</button>`
+        ).join('')}</div>`
+      ).join('')}
+    </div>`;
+  div.style.display = 'block';
+}
+
+function responderF2(equipo, opIdx) {
+  if (f2respondido) return;
+  f2respondido = true;
+  clearInterval(timerInterval);
+  const q = fase2[f2idx];
+  const correcto = opIdx === q.correcta;
+
+  // Colorear opciones
+  q.opciones.forEach((_,i) => {
+    const el = document.getElementById('op-'+i);
+    if (i === q.correcta) el.classList.add('correcta');
+    else if (i === opIdx && !correcto) el.classList.add('incorrecta');
+  });
+
+  document.getElementById('f2-equipos-votacion').style.display = 'none';
+
+  if (correcto) {
+    equipos[equipo]++;
+    playSound('correct'); confetti();
+    document.getElementById('f2-reaccion').innerHTML = `<div class="reaccion ok">${REACCIONES_OK[Math.floor(Math.random()*REACCIONES_OK.length)]}</div>`;
+  } else {
+    playSound('wrong');
+    document.getElementById('f2-reaccion').innerHTML = `<div class="reaccion mal">${REACCIONES_MAL[Math.floor(Math.random()*REACCIONES_MAL.length)]}</div>`;
+  }
+
+  renderPuntajes();
+  const btnNext = document.getElementById('f2-btn-next');
+  btnNext.textContent = f2idx+1 < fase2.length ? 'Siguiente pregunta →' : '¡Ver ganador! 🏆';
+  btnNext.style.display = 'block';
+}
+
+function siguienteF2() {
+  if (f2idx + 1 >= fase2.length) {
+    playSound('fanfare'); confetti();
+    mostrarFin();
+  } else {
+    f2idx++;
+    renderF2();
+  }
+}
+
+function mostrarFin() {
+  irA('pantalla-fin');
+  const maxPts = Math.max(...equipos);
+  const emojis = ['🔴','🟡','🔵'];
+  document.getElementById('fin-cards').innerHTML = equipos.map((p,i) => {
+    const ganador = p === maxPts;
+    return `<div class="fin-card${ganador?' ganador':''}">
+      <div class="fin-emoji">${emojis[i]}</div>
+      ${ganador?'<div class="fin-corona">👑</div>':''}
+      <div class="fin-pts">${p}</div>
+      <div class="fin-label">Equipo ${i+1}</div>
+    </div>`;
+  }).join('');
+}
+
+function reiniciar() {
+  f1idx=0; f2idx=0; equipos=[0,0,0];
+  irA('pantalla-intro');
+}
+</script>
+</body>
+</html>
